@@ -1,0 +1,33 @@
+# Compiled output
+*.class
+bin/
+out/
+target/
+build/
+
+# Packages / archives
+*.jar
+*.war
+*.zip
+
+# Logs
+*.log
+hs_err_pid*
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+.eclipse/
+nbproject/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Secrets / local config
+.env
