@@ -1,12 +1,13 @@
 package testing;
 
 import hotelhelper.*;
+import java.util.Random;
 
 /**
- * Tests the Report class using hand-built daily records so every number
- * in the reports is known in advance.
+ * Tests the Report class. Most tests build the daily records by hand so the
+ * expected totals and averages are known exactly.
  *
- * @author Dallan Barnum
+ * @author Jaidev Gogineni
  * @version October 2026
  */
 public class ReportTest
@@ -19,61 +20,96 @@ public class ReportTest
     private DailyData dailyData;
 
     /**
-     * Creates a new Report before each test. The hotel has 3 Single and
-     * 2 Double rooms and a 4 day simulation, of which 3 days are stored.
+     * Creates a new Report before each test
      */
     public void setUp()
     {
-        hotelData = new HotelData(4, 10, 2, new String[] { "Single",
-            "Double" }, new int[] { 3, 2 }, new double[] { 60.0, 40.0 });
+        // 4 days, 2 Single rooms and 1 Suite (3 rooms total)
+        hotelData = new HotelData(4, 5, 2, new String[] { "Single", "Suite" },
+            new int[] { 2, 1 }, new double[] { 60.0, 40.0 });
         guestData = new GuestData();
-        dailyData = new DailyData(4, 5);
-
-        // Day 1: 4 arrivals, 3 served, 1 unserved
-        DailyRecord d1 = new DailyRecord(1, 2);
-        d1.setTotalGuests(4);
-        d1.setServedGuests(3);
-        d1.setUnservedGuests(1);
-        d1.setCheckIns(3);
-        d1.setOccupiedRooms(3);
-        d1.setAvailableRooms(2);
-        d1.setAverageWaitingTime(0.5);
-        for (int i = 0; i < 3; i++)
-        {
-            d1.incrementDemand(0);
-        }
-        d1.incrementDemand(1);
-        d1.incrementShortage(0);
-        dailyData.addDay(d1);
-
-        // Day 2: the busiest day
-        DailyRecord d2 = new DailyRecord(2, 2);
-        d2.setTotalGuests(10);
-        d2.setServedGuests(5);
-        d2.setUnservedGuests(2);
-        d2.setCheckIns(5);
-        d2.setCheckOuts(2);
-        d2.setWaitingGuests(3);
-        d2.setOccupiedRooms(5);
-        d2.setAvailableRooms(0);
-        d2.setAverageWaitingTime(1.0);
-        d2.incrementShortage(0);
-        d2.incrementShortage(1);
-        dailyData.addDay(d2);
-
-        // Day 3
-        DailyRecord d3 = new DailyRecord(3, 2);
-        d3.setTotalGuests(2);
-        d3.setServedGuests(2);
-        d3.setCheckIns(2);
-        d3.setCheckOuts(3);
-        d3.setWaitingGuests(1);
-        d3.setOccupiedRooms(4);
-        d3.setAvailableRooms(1);
-        d3.setAverageWaitingTime(2.0);
-        dailyData.addDay(d3);
-
+        dailyData = new DailyData(4, 3);
         report = new Report(hotelData, guestData, dailyData);
+    }
+
+
+    /**
+     * Builds and stores the next day's record.
+     *
+     * @param arrivals guests who arrived
+     * @param checkIns guests checked in (also the served count)
+     * @param checkOuts guests checked out
+     * @param unserved guests who left unserved
+     * @param waiting guests still waiting at the end of the day
+     * @param avgWait average wait of the day's check-ins
+     * @param occupied rooms occupied at the end of the day
+     * @param cleaning rooms being cleaned at the end of the day
+     * @param shortages shortages for Single and Suite
+     * @return the stored record
+     */
+    private DailyRecord addDay(int arrivals, int checkIns, int checkOuts,
+        int unserved, int waiting, double avgWait, int occupied, int cleaning,
+        int[] shortages)
+    {
+        DailyRecord r = new DailyRecord(dailyData.getNumberOfDays() + 1, 2);
+        r.setTotalGuests(arrivals);
+        r.setCheckIns(checkIns);
+        r.setServedGuests(checkIns);
+        r.setCheckOuts(checkOuts);
+        r.setUnservedGuests(unserved);
+        r.setWaitingGuests(waiting);
+        r.setAverageWaitingTime(avgWait);
+        r.setOccupiedRooms(occupied);
+        r.setRoomsBeingCleaned(cleaning);
+        r.setAvailableRooms(3 - occupied - cleaning);
+        for (int t = 0; t < 2; t++)
+        {
+            for (int i = 0; i < shortages[t]; i++)
+            {
+                r.incrementShortage(t);
+            }
+        }
+        dailyData.addDay(r);
+        return r;
+    }
+
+
+    /**
+     * Adds three days where Singles run short every day, many guests leave,
+     * and waits are long. Day 2 and day 3 tie for the most arrivals.
+     */
+    private void addBusyDays()
+    {
+        addDay(4, 2, 0, 0, 2, 0.0, 2, 0, new int[] { 2, 0 });
+        addDay(6, 1, 1, 3, 4, 3.0, 2, 1, new int[] { 3, 0 });
+        addDay(6, 1, 0, 3, 3, 3.0, 3, 0, new int[] { 1, 0 });
+    }
+
+
+    /**
+     * Tests the constructor rejects null arguments
+     */
+    public void testConstructorRejectsNull()
+    {
+        Object[][] badArgs = {
+            { null, guestData, dailyData },
+            { hotelData, null, dailyData },
+            { hotelData, guestData, null } };
+
+        for (Object[] args : badArgs)
+        {
+            Exception thrown = null;
+            try
+            {
+                new Report((HotelData)args[0], (GuestData)args[1],
+                    (DailyData)args[2]);
+            }
+            catch (Exception e)
+            {
+                thrown = e;
+            }
+            assertTrue(thrown instanceof IllegalArgumentException);
+        }
     }
 
 
@@ -82,26 +118,29 @@ public class ReportTest
      */
     public void testDailyReportForCompletedDay()
     {
+        DailyRecord r = addDay(5, 2, 1, 1, 2, 0.5, 2, 1, new int[] { 3, 1 });
+        r.incrementDemand(0);
+        r.incrementDemand(0);
+        r.incrementDemand(0);
+        r.incrementDemand(1);
+        r.incrementDemand(1);
+
         String text = report.dailyReport(1);
         assertTrue(text.contains("Day 1 Report"));
-        assertTrue(text.contains("New arrivals:        4"));
-        assertTrue(text.contains("Served (checked in): 3"));
+        assertTrue(text.contains("New arrivals:        5"));
+        assertTrue(text.contains("Served (checked in): 2"));
         assertTrue(text.contains("Left unserved:       1"));
-        assertTrue(text.contains("Still waiting:       0"));
-        assertTrue(text.contains("0.50 days"));
-        assertTrue(text.contains("Check-ins:  3"));
-        assertTrue(text.contains("Occupied:  3"));
-        assertTrue(text.contains("Available: 2"));
-        assertTrue(text.contains("Cleaning:  0"));
-        assertTrue(text.contains("Single"));
-        assertTrue(text.contains("Double"));
-        assertTrue(text.contains("demand   3   shortage   1"));
-        assertTrue(text.contains("demand   1   shortage   0"));
-
-        String second = report.dailyReport(2);
-        assertTrue(second.contains("Day 2 Report"));
-        assertTrue(second.contains("Check-outs: 2"));
-        assertTrue(second.contains("Still waiting:       3"));
+        assertTrue(text.contains("Still waiting:       2"));
+        assertTrue(text.contains("Average wait:        0.50 days"));
+        assertTrue(text.contains("Check-ins:  2"));
+        assertTrue(text.contains("Check-outs: 1"));
+        assertTrue(text.contains("Occupied:  2"));
+        assertTrue(text.contains("Available: 0"));
+        assertTrue(text.contains("Cleaning:  1"));
+        assertTrue(text.contains(String.format(
+            "  %-15s demand %3d   shortage %3d", "Single", 3, 3)));
+        assertTrue(text.contains(String.format(
+            "  %-15s demand %3d   shortage %3d", "Suite", 2, 1)));
     }
 
 
@@ -110,47 +149,43 @@ public class ReportTest
      */
     public void testDailyReportForUnsimulatedDayThrows()
     {
-        int[] badDays = { 0, -1, 4, 50 };
-        for (int day : badDays)
+        // no days yet
+        Exception thrown = null;
+        try
         {
-            try
-            {
-                report.dailyReport(day);
-                fail("Day " + day + " has not been simulated");
-            }
-            catch (IllegalArgumentException e)
-            {
-                assertNotNull(e.getMessage());
-            }
+            report.dailyReport(1);
         }
+        catch (Exception e)
+        {
+            thrown = e;
+        }
+        assertTrue(thrown instanceof IllegalArgumentException);
 
+        addDay(1, 1, 0, 0, 0, 0.0, 1, 0, new int[] { 0, 0 });
+
+        thrown = null;
         try
         {
-            new Report(null, guestData, dailyData);
-            fail("Null argument should be rejected");
+            report.dailyReport(0);
         }
-        catch (IllegalArgumentException e)
+        catch (Exception e)
         {
-            assertNotNull(e.getMessage());
+            thrown = e;
         }
+        assertTrue(thrown instanceof IllegalArgumentException);
+
+        thrown = null;
         try
         {
-            new Report(hotelData, null, dailyData);
-            fail("Null argument should be rejected");
+            report.dailyReport(2);
         }
-        catch (IllegalArgumentException e)
+        catch (Exception e)
         {
-            assertNotNull(e.getMessage());
+            thrown = e;
         }
-        try
-        {
-            new Report(hotelData, guestData, null);
-            fail("Null argument should be rejected");
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertNotNull(e.getMessage());
-        }
+        assertTrue(thrown instanceof IllegalArgumentException);
+
+        assertTrue(report.dailyReport(1).contains("Day 1 Report"));
     }
 
 
@@ -159,17 +194,27 @@ public class ReportTest
      */
     public void testFinalReportAfterSimulation()
     {
-        String text = report.finalReport();
-        assertTrue(text.contains("Final Report"));
-        assertTrue(text.contains("Days simulated: 3 of 4"));
-        assertTrue(text.contains("Shortages by room type"));
-        assertTrue(text.contains("Busiest day: Day 2 (10 arrivals)"));
-        assertTrue(text.contains("Recommendations"));
+        // before any days are run
+        String empty = report.finalReport();
+        assertTrue(empty.contains("Final Report"));
+        assertTrue(empty.contains("No days have been simulated yet."));
 
-        // With no days simulated there is nothing to divide by
-        Report empty = new Report(hotelData, guestData, new DailyData(4, 5));
-        String emptyText = empty.finalReport();
-        assertTrue(emptyText.contains("No days have been simulated yet."));
+        // after a real simulation runs every day
+        Simulation simulation = new Simulation(hotelData, guestData,
+            new RoomData(hotelData), dailyData, new Random(5));
+        simulation.runAll();
+
+        String text = report.finalReport();
+        assertTrue(text.contains("Days simulated: 4 of 4"));
+        assertTrue(text.contains("Total arrivals:   "
+            + guestData.getTotalGuests()));
+        assertTrue(text.contains("Guest records:    "
+            + guestData.getTotalGuests() + " total, "
+            + guestData.getUnservedCount() + " unserved"));
+        assertTrue(text.contains("Shortages by room type"));
+        assertTrue(text.contains("Busiest day: Day "));
+        assertTrue(text.contains("Recommendations"));
+        assertFalse(text.contains("No days have been simulated yet."));
     }
 
 
@@ -178,16 +223,21 @@ public class ReportTest
      */
     public void testTotalsAndAveragesMatchDailyRecords()
     {
+        addBusyDays();
+
         String text = report.finalReport();
+        assertTrue(text.contains("Days simulated: 3 of 4"));
         assertTrue(text.contains("Total arrivals:   16"));
-        assertTrue(text.contains("Checked in:       10"));
-        assertTrue(text.contains("Checked out:      5"));
-        assertTrue(text.contains("Left unserved:    3 (18.8%)"));
-        assertTrue(text.contains("Still waiting:    1"));
-        // (0.5 * 3 + 1.0 * 5 + 2.0 * 2) / 10 check-ins
-        assertTrue(text.contains("Average wait:     1.05 days"));
+        assertTrue(text.contains("Checked in:       4"));
+        assertTrue(text.contains("Checked out:      1"));
+        // 6 of 16 guests left
+        assertTrue(text.contains("Left unserved:    6 (37.5%)"));
+        // (0*2 + 3*1 + 3*1) / 4 check-ins = 1.50 days
+        assertTrue(text.contains("Average wait:     1.50 days"));
+        // 16 arrivals over 3 days
         assertTrue(text.contains("Avg arrivals/day: 5.33"));
-        assertTrue(text.contains("Average occupied: 4.00 of 5 (80.0%)"));
+        // (2 + 2 + 3) / 3 days = 2.33 of 3 rooms
+        assertTrue(text.contains("Average occupied: 2.33 of 3 (77.8%)"));
     }
 
 
@@ -196,25 +246,17 @@ public class ReportTest
      */
     public void testIdentifiesShortagesUnservedWaitingAndBusyDays()
     {
-        String text = report.finalReport();
-        // Single ran short on 2 days, Double on 1
-        assertTrue(text.contains("Single          2"));
-        assertTrue(text.contains("Double          1"));
-        assertTrue(text.contains("Busiest day: Day 2"));
-        assertTrue(text.contains("Left unserved:    3"));
-        assertTrue(text.contains("Still waiting:    1"));
+        addBusyDays();
 
-        // Ties go to the earlier day
-        DailyData tied = new DailyData(2, 5);
-        for (int day = 1; day <= 2; day++)
-        {
-            DailyRecord r = new DailyRecord(day, 2);
-            r.setTotalGuests(7);
-            r.setOccupiedRooms(5);
-            tied.addDay(r);
-        }
-        Report tiedReport = new Report(hotelData, guestData, tied);
-        assertTrue(tiedReport.finalReport().contains("Busiest day: Day 1 (7"));
+        String text = report.finalReport();
+        // shortages add up across the days for each type
+        assertTrue(text.contains(String.format("  %-15s %d", "Single", 6)));
+        assertTrue(text.contains(String.format("  %-15s %d", "Suite", 0)));
+        // waiting count comes from the last day
+        assertTrue(text.contains("Still waiting:    3"));
+        assertTrue(text.contains("Left unserved:    6"));
+        // days 2 and 3 tie at 6 arrivals; the earlier day wins
+        assertTrue(text.contains("Busiest day: Day 2 (6 arrivals)"));
     }
 
 
@@ -223,41 +265,51 @@ public class ReportTest
      */
     public void testRecommendationsForRecurringShortages()
     {
+        addBusyDays();
+
         String text = report.finalReport();
-        assertTrue(text.contains("Add more Single rooms: "
-            + "there was a shortage on 2 of 3 days"));
-        assertTrue(text.contains("Add more Double rooms: "
-            + "there was a shortage on 1 of 3 days"));
+        assertTrue(text.contains(
+            "Add more Single rooms: there was a shortage on 3 of 3 days."));
+        assertFalse(text.contains("Add more Suite rooms"));
         assertTrue(text.contains("Over 10% of guests left unserved"));
-        assertTrue(text.contains("wait more than a day"));
+        assertTrue(text.contains("wait more than a day on average"));
         assertFalse(text.contains("below 50%"));
         assertFalse(text.contains("No recurring problems found"));
+    }
 
-        // A healthy hotel gets no complaints
-        DailyData healthy = new DailyData(2, 5);
-        for (int day = 1; day <= 2; day++)
-        {
-            DailyRecord r = new DailyRecord(day, 2);
-            r.setTotalGuests(4);
-            r.setServedGuests(4);
-            r.setCheckIns(4);
-            r.setOccupiedRooms(4);
-            r.setAvailableRooms(1);
-            healthy.addDay(r);
-        }
-        String healthyText =
-            new Report(hotelData, guestData, healthy).finalReport();
-        assertTrue(healthyText.contains("No recurring problems found"));
-        assertFalse(healthyText.contains("Add more"));
 
-        // An empty hotel is flagged as over-built
-        DailyData quiet = new DailyData(2, 5);
-        DailyRecord r = new DailyRecord(1, 2);
-        r.setOccupiedRooms(1);
-        r.setAvailableRooms(4);
-        quiet.addDay(r);
-        String quietText =
-            new Report(hotelData, guestData, quiet).finalReport();
-        assertTrue(quietText.contains("below 50%"));
+    /**
+     * Tests a hotel with no problems gets the all-clear message
+     */
+    public void testRecommendationsWhenNoProblems()
+    {
+        addDay(2, 2, 0, 0, 0, 0.0, 2, 0, new int[] { 0, 0 });
+        addDay(3, 1, 1, 0, 0, 0.0, 2, 1, new int[] { 0, 0 });
+
+        String text = report.finalReport();
+        assertTrue(text.contains("No recurring problems found"));
+        assertFalse(text.contains("Add more"));
+        assertFalse(text.contains("Over 10%"));
+        assertFalse(text.contains("below 50%"));
+    }
+
+
+    /**
+     * Tests low occupancy and an occasional shortage
+     */
+    public void testRecommendationsForLowOccupancy()
+    {
+        // a Suite shortage on 1 of 4 days counts (25%); occupancy is low
+        addDay(1, 1, 0, 0, 0, 0.0, 1, 0, new int[] { 0, 1 });
+        addDay(0, 0, 0, 0, 0, 0.0, 0, 0, new int[] { 0, 0 });
+        addDay(0, 0, 1, 0, 0, 0.0, 0, 1, new int[] { 0, 0 });
+        addDay(0, 0, 0, 0, 0, 0.0, 0, 0, new int[] { 0, 0 });
+
+        String text = report.finalReport();
+        assertTrue(text.contains("below 50%"));
+        assertTrue(text.contains(
+            "Add more Suite rooms: there was a shortage on 1 of 4 days."));
+        assertFalse(text.contains("Add more Single rooms"));
+        assertTrue(text.contains("Average wait:     0.00 days"));
     }
 }
