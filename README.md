@@ -33,7 +33,7 @@ to find where problems or bottlenecks appear.
 
 ## Attribution
 | Class & Tests  | Name | Did |
-| ------------- | ------------- |
+| ------------- | ------------- | ------------- |
 | DailyData | Name |  |
 | DailyRecord | Matthew  |  Drafted and wrote with GenAI Assistance  |
 |  GuestData | Name |     |
