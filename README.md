@@ -34,15 +34,15 @@ to find where problems or bottlenecks appear.
 ## Attribution
 | Class & Tests  | Name | Did |
 | ------------- | ------------- | ------------- |
-| DailyData | Name |  |
+| DailyData | Jaidev | Drafted and wrote with GenAI Assistance |
 | DailyRecord | Matthew  |  Drafted and wrote with GenAI Assistance  |
 |  GuestData | Name |     |
 |  GuestRecord | Matthew |  Drafted and wrote with GenAI Assistance   |
 | GuestStatus | Name  |     |
 | HotelData | Name  |     |
-| HotelSimulator | Name  |     |
-| Report | Name  |     |
+| HotelSimulator | Jaidev  |   Drafted and wrote with GenAI Assistance  |
+| Report | Jaidev  |  Drafted and wrote with GenAI Assistance   |
 | RoomData | Name  |     |
 | RoomRecord | Matthew  |  Drafted and wrote with GenAI Assistance   |
 | RoomStatus | Name  |     |
-| Simulation | Name  |     |
+| Simulation | Jaidev  |   Drafted and wrote with GenAI Assistance  |
