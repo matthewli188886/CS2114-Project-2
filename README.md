@@ -34,14 +34,14 @@ to find where problems or bottlenecks appear.
 ## Attribution
 | Class & Tests  | Name | Did |
 | ------------- | ------------- | ------------- |
-| DailyData | Jaidev | Drafted and wrote with GenAI Assistance |
+| DailyData | Jaidev, Dallan | Drafted and wrote with GenAI Assistance, Dallan wrote tests |
 | DailyRecord | Matthew  |  Drafted and wrote with GenAI Assistance  |
 | GuestData | Zichen |   Drafted, wrote and had GenAI revise  |
 | GuestRecord | Matthew, Dallan |  Drafted and wrote with GenAI Assistance, Reviewed |
 | GuestStatus | Dallan  |  Drafted and wrote  |
 | HotelData | Zichen  | Drafted, wrote and had GenAI revise |
-| HotelSimulator | Jaidev, Dallan  |   Drafted and wrote with GenAI Assistance, Reviewed  |
-| Report | Jaidev  |  Drafted and wrote with GenAI Assistance   |
+| HotelSimulator | Jaidev, Dallan  |   Drafted and wrote with GenAI Assistance, Dallan wrote tests |
+| Report | Jaidev, Dallan  |  Drafted and wrote with GenAI Assistance, Dallan wrote tests |
 | RoomData | Zichen   |   Drafted, wrote and had GenAI revise   |
 | RoomRecord | Matthew  |  Drafted and wrote with GenAI Assistance   |
 | RoomStatus | Dallan   |  Drafted and wrote   |
