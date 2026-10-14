@@ -14,7 +14,8 @@ to find where problems or bottlenecks appear.
 
 - Matthew Li
 - Zichen Fu
-- _Add teammates here_
+- Dallan Barnum
+- Jaidev Gogineni
 
 ## Getting Started
 
