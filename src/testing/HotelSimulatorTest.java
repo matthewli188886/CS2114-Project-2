@@ -6,7 +6,7 @@ import java.util.Scanner;
 /**
  * Tests the HotelSimulator class using scripted input.
  *
- * @author Matthew Li
+ * @author Dallan Barnum
  * @version October 2026
  */
 public class HotelSimulatorTest

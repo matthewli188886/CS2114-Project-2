@@ -6,7 +6,7 @@ import hotelhelper.*;
  * Tests the Report class using hand-built daily records so every number
  * in the reports is known in advance.
  *
- * @author Matthew Li
+ * @author Dallan Barnum
  * @version October 2026
  */
 public class ReportTest
