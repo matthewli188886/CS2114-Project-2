@@ -36,13 +36,13 @@ to find where problems or bottlenecks appear.
 | ------------- | ------------- | ------------- |
 | DailyData | Jaidev | Drafted and wrote with GenAI Assistance |
 | DailyRecord | Matthew  |  Drafted and wrote with GenAI Assistance  |
-|  GuestData | Name |     |
-|  GuestRecord | Matthew |  Drafted and wrote with GenAI Assistance   |
-| GuestStatus | Name  |     |
-| HotelData | Name  |     |
-| HotelSimulator | Jaidev  |   Drafted and wrote with GenAI Assistance  |
+| GuestData | Zichen |   Drafted, wrote and had GenAI revise  |
+| GuestRecord | Matthew, Dallan |  Drafted and wrote with GenAI Assistance, Reviewed |
+| GuestStatus | Dallan  |  Drafted and wrote  |
+| HotelData | Zichen  | Drafted, wrote and had GenAI revise |
+| HotelSimulator | Jaidev, Dallan  |   Drafted and wrote with GenAI Assistance, Reviewed  |
 | Report | Jaidev  |  Drafted and wrote with GenAI Assistance   |
-| RoomData | Name  |     |
+| RoomData | Zichen   |   Drafted, wrote and had GenAI revise   |
 | RoomRecord | Matthew  |  Drafted and wrote with GenAI Assistance   |
-| RoomStatus | Name  |     |
+| RoomStatus | Dallan   |  Drafted and wrote   |
 | Simulation | Jaidev  |   Drafted and wrote with GenAI Assistance  |
