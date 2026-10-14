@@ -1,4 +1,4 @@
-package hotel;
+package hotelhelper;
 
 /** One room. */
 public class RoomRecord {

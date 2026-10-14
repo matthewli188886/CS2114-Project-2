@@ -1,4 +1,6 @@
-package hotel;
+package testing;
+
+import hotelhelper.*;
 
 public class GuestDataTest
     extends student.TestCase

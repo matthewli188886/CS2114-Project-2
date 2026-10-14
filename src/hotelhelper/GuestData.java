@@ -1,4 +1,4 @@
-package hotel;
+package hotelhelper;
 
 /** Stores every guest and the guests who left without service. */
 public class GuestData {

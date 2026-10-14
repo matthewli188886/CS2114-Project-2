@@ -1,4 +1,4 @@
-package hotel;
+package hotelhelper;
 
 /** Where a guest is in the check-in process. */
 public enum GuestStatus {

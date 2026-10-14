@@ -1,4 +1,6 @@
-package hotel;
+package testing;
+
+import hotelhelper.*;
 
 public class SimulationTest
     extends student.TestCase

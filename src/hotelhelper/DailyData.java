@@ -1,4 +1,4 @@
-package hotel;
+package hotelhelper;
 
 /** Keeps one DailyRecord per simulated day, in order. */
 public class DailyData {

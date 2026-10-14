@@ -1,4 +1,4 @@
-package hotel;
+package hotelhelper;
 
 /**
  * The hotel's fixed setup. The three arrays are parallel: index i in each

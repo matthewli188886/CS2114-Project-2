@@ -1,4 +1,4 @@
-package hotel;
+package hotelhelper;
 
 /** One guest. */
 public class GuestRecord {

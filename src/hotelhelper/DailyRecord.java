@@ -1,4 +1,4 @@
-package hotel;
+package hotelhelper;
 
 /** Results and statistics for one simulated day. */
 public class DailyRecord {

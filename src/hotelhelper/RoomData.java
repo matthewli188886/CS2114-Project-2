@@ -1,4 +1,4 @@
-package hotel;
+package hotelhelper;
 
 /** Stores every room and answers availability questions. */
 public class RoomData {

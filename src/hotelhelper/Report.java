@@ -1,4 +1,4 @@
-package hotel;
+package hotelhelper;
 
 /** Builds daily and final reports from stored data. */
 public class Report {
