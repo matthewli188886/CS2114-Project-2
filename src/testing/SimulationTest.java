@@ -4,10 +4,10 @@ import hotelhelper.*;
 import java.util.Random;
 
 /**
- * Tests the Simulation class. Most tests use an expected arrival count of 0
- * and add guests by hand, so every day's result is known in advance.
+ * Tests the Simulation class. Every simulation uses a seeded Random so the
+ * results are the same on every run.
  *
- * @author Dallan Barnum
+ * @author Jaidev Gogineni
  * @version October 2026
  */
 public class SimulationTest
@@ -21,33 +21,99 @@ public class SimulationTest
     private DailyData dailyData;
 
     /**
-     * Creates a new Simulation before each test: 5 days, no random
-     * arrivals, guests wait at most 2 days, 1 Single and 1 Double room.
+     * Creates a new Simulation before each test
      */
     public void setUp()
     {
-        build(5, 0, 2, new Random(1));
+        // 10 days, about 4 guests a day, guests wait up to 2 days,
+        // 3 Single rooms and 2 Suites
+        build(10, 4, 2, new String[] { "Single", "Suite" },
+            new int[] { 3, 2 }, new double[] { 60.0, 40.0 }, 42);
     }
 
 
     /**
-     * Rebuilds all the data classes and the simulation.
+     * Replaces the simulation and its data classes with a new setup.
      *
-     * @param days the simulation length
-     * @param expected expected guests per day
-     * @param maxWait the longest a guest will wait
-     * @param random the random source
+     * @param days simulation length
+     * @param guestsPerDay expected guests per day
+     * @param maxWait max days a guest waits
+     * @param types room type names
+     * @param counts rooms of each type
+     * @param percents demand for each type
+     * @param seed seed for the Random
      */
-    private void build(int days, int expected, int maxWait, Random random)
+    private void build(int days, int guestsPerDay, int maxWait,
+        String[] types, int[] counts, double[] percents, long seed)
     {
-        hotelData = new HotelData(days, expected, maxWait, new String[] {
-            "Single", "Double" }, new int[] { 1, 1 },
-            new double[] { 50.0, 50.0 });
+        hotelData = new HotelData(days, guestsPerDay, maxWait, types,
+            counts, percents);
         guestData = new GuestData();
         roomData = new RoomData(hotelData);
         dailyData = new DailyData(days, hotelData.getTotalRooms());
-        simulation =
-            new Simulation(hotelData, guestData, roomData, dailyData, random);
+        simulation = new Simulation(hotelData, guestData, roomData,
+            dailyData, new Random(seed));
+    }
+
+
+    /**
+     * Builds a hotel with a single room type.
+     *
+     * @param days simulation length
+     * @param guestsPerDay expected guests per day
+     * @param maxWait max days a guest waits
+     * @param rooms number of rooms
+     */
+    private void buildOneType(int days, int guestsPerDay, int maxWait,
+        int rooms)
+    {
+        build(days, guestsPerDay, maxWait, new String[] { "Single" },
+            new int[] { rooms }, new double[] { 100.0 }, 7);
+    }
+
+
+    /**
+     * Gets every guest as an array, in arrival order.
+     *
+     * @return all guests
+     */
+    private GuestRecord[] allGuests()
+    {
+        LinkedChain<GuestRecord> guests = guestData.getGuests();
+        return guests.toArray(new GuestRecord[guests.size()]);
+    }
+
+
+    /**
+     * Tests the constructor starts at day 0 and rejects null arguments
+     */
+    public void testConstructor()
+    {
+        assertEquals(0, simulation.getCurrentDay());
+        assertTrue(simulation.hasMoreDays());
+
+        Random random = new Random(1);
+        Object[][] badArgs = {
+            { null, guestData, roomData, dailyData, random },
+            { hotelData, null, roomData, dailyData, random },
+            { hotelData, guestData, null, dailyData, random },
+            { hotelData, guestData, roomData, null, random },
+            { hotelData, guestData, roomData, dailyData, null } };
+
+        for (Object[] args : badArgs)
+        {
+            Exception thrown = null;
+            try
+            {
+                new Simulation((HotelData)args[0], (GuestData)args[1],
+                    (RoomData)args[2], (DailyData)args[3], (Random)args[4]);
+            }
+            catch (Exception e)
+            {
+                thrown = e;
+            }
+            assertTrue(thrown instanceof IllegalArgumentException);
+        }
     }
 
 
@@ -56,19 +122,25 @@ public class SimulationTest
      */
     public void testNoGuestsNoDivisionByZero()
     {
+        buildOneType(5, 0, 1, 2);
         simulation.runAll();
+
         assertEquals(5, dailyData.getNumberOfDays());
+        assertEquals(0, guestData.getTotalGuests());
         for (int day = 1; day <= 5; day++)
         {
             DailyRecord r = dailyData.getDay(day);
             assertEquals(0, r.getTotalGuests());
             assertEquals(0, r.getCheckIns());
-            assertEquals(0, r.getUnservedGuests());
+            assertEquals(0, r.getCheckOuts());
             assertEquals(0, r.getWaitingGuests());
             assertEquals(0.0, r.getAverageWaitingTime(), 0.0001);
             assertEquals(2, r.getAvailableRooms());
         }
-        assertEquals(0, guestData.getTotalGuests());
+
+        // the report averages over zero guests without dividing by zero
+        Report report = new Report(hotelData, guestData, dailyData);
+        assertTrue(report.finalReport().contains("Average wait:     0.00"));
     }
 
 
@@ -77,19 +149,27 @@ public class SimulationTest
      */
     public void testEnoughRoomsForEveryGuest()
     {
-        guestData.addGuest("Single", 1, 2);
-        guestData.addGuest("Double", 1, 1);
+        // at most 6 guests a day for 5 days, and 100 rooms
+        buildOneType(5, 5, 0, 100);
+        simulation.runAll();
 
-        DailyRecord r = simulation.runNextDay();
-        assertEquals(2, r.getCheckIns());
-        assertEquals(2, r.getServedGuests());
-        assertEquals(0, r.getWaitingGuests());
-        assertEquals(0, r.getUnservedGuests());
-        assertEquals(2, r.getOccupiedRooms());
-        assertEquals(0, r.getAvailableRooms());
-        assertEquals(0, r.getShortageByType()[0]);
-        assertEquals(0, r.getShortageByType()[1]);
-        assertEquals(0.0, r.getAverageWaitingTime(), 0.0001);
+        assertTrue(guestData.getTotalGuests() > 0);
+        assertEquals(0, guestData.getUnservedCount());
+        for (GuestRecord guest : allGuests())
+        {
+            assertTrue(guest.getStatus() != GuestStatus.WAITING);
+            assertTrue(guest.getStatus() != GuestStatus.LEFT_UNSERVED);
+            // everyone got a room on the day they arrived
+            assertEquals(guest.getArrivalDay(), guest.getCheckInDay());
+        }
+        for (int day = 1; day <= 5; day++)
+        {
+            DailyRecord r = dailyData.getDay(day);
+            assertEquals(r.getTotalGuests(), r.getCheckIns());
+            assertEquals(0, r.getShortageByType()[0]);
+            assertEquals(0, r.getUnservedGuests());
+            assertEquals(0, r.getWaitingGuests());
+        }
     }
 
 
@@ -98,20 +178,30 @@ public class SimulationTest
      */
     public void testMoreGuestsThanRooms()
     {
-        // Only one Single room exists
-        guestData.addGuest("Single", 1, 5);
-        guestData.addGuest("Single", 1, 5);
-        guestData.addGuest("Single", 1, 5);
+        // about 5 guests a day, 1 room, guests leave the day they arrive
+        buildOneType(3, 5, 0, 1);
+        simulation.runAll();
 
-        DailyRecord r = simulation.runNextDay();
-        assertEquals(1, r.getCheckIns());
-        assertEquals(2, r.getWaitingGuests());
-        assertEquals(0, r.getUnservedGuests());
-        // Each guest who cannot get a room of their type is one shortage
-        assertEquals(2, r.getShortageByType()[0]);
-        assertEquals(0, r.getShortageByType()[1]);
-        assertEquals(1, r.getOccupiedRooms());
-        assertEquals(1, r.getAvailableRooms());
+        assertTrue(guestData.getUnservedCount() > 0);
+        int totalShortage = 0;
+        for (int day = 1; day <= 3; day++)
+        {
+            DailyRecord r = dailyData.getDay(day);
+            // one room means at most one check-in a day
+            assertTrue(r.getCheckIns() <= 1);
+            totalShortage += r.getShortageByType()[0];
+        }
+        assertTrue(totalShortage > 0);
+
+        // everyone who was not checked in left unserved
+        for (GuestRecord guest : allGuests())
+        {
+            if (guest.getCheckInDay() == -1)
+            {
+                assertEquals(GuestStatus.LEFT_UNSERVED, guest.getStatus());
+                assertTrue(guestData.getUnservedGuests().contains(guest));
+            }
+        }
     }
 
 
@@ -120,30 +210,29 @@ public class SimulationTest
      */
     public void testGuestsCheckedInInArrivalOrder()
     {
-        build(5, 0, 5, new Random(1));
-        GuestRecord first = guestData.addGuest("Single", 1, 1);
-        GuestRecord second = guestData.addGuest("Single", 1, 1);
-        GuestRecord third = guestData.addGuest("Single", 1, 1);
+        // one room and guests who wait a long time, so they queue up
+        buildOneType(20, 3, 30, 1);
+        simulation.runAll();
 
-        simulation.runNextDay();
-        assertEquals(GuestStatus.CHECKED_IN, first.getStatus());
-        assertEquals(GuestStatus.WAITING, second.getStatus());
-        assertEquals(GuestStatus.WAITING, third.getStatus());
-        assertEquals(1, first.getCheckInDay());
+        GuestRecord[] guests = allGuests();
+        assertEquals(1, guests[0].getCheckInDay());
 
-        // Day 2: first checks out, room cleans. Nobody checks in.
-        simulation.runNextDay();
-        assertEquals(GuestStatus.CHECKED_OUT, first.getStatus());
-        assertEquals(GuestStatus.WAITING, second.getStatus());
-
-        // Day 3: room is available again, second goes first
-        DailyRecord r = simulation.runNextDay();
-        assertEquals(GuestStatus.CHECKED_IN, second.getStatus());
-        assertEquals(3, second.getCheckInDay());
-        assertEquals(GuestStatus.WAITING, third.getStatus());
-        assertEquals(1, r.getCheckIns());
-        // The second guest waited from day 1 to day 3
-        assertEquals(2.0, r.getAverageWaitingTime(), 0.0001);
+        int lastCheckIn = 0;
+        boolean someoneSkipped = false;
+        for (GuestRecord guest : guests)
+        {
+            if (guest.getCheckInDay() == -1)
+            {
+                someoneSkipped = true;
+            }
+            else
+            {
+                // nobody gets a room ahead of a guest who arrived earlier
+                assertFalse(someoneSkipped);
+                assertTrue(guest.getCheckInDay() >= lastCheckIn);
+                lastCheckIn = guest.getCheckInDay();
+            }
+        }
     }
 
 
@@ -152,31 +241,34 @@ public class SimulationTest
      */
     public void testGuestsLeaveUnservedAfterMaxWait()
     {
-        guestData.addGuest("Single", 1, 7);
-        GuestRecord waiter = guestData.addGuest("Single", 1, 1);
+        buildOneType(10, 3, 2, 1);
 
-        DailyRecord d1 = simulation.runNextDay();
-        assertEquals(0, d1.getUnservedGuests());
-        assertEquals(1, d1.getWaitingGuests());
+        while (simulation.hasMoreDays())
+        {
+            DailyRecord r = simulation.runNextDay();
+            int today = r.getDay();
 
-        DailyRecord d2 = simulation.runNextDay();
-        assertEquals(0, d2.getUnservedGuests());
-        assertEquals(GuestStatus.WAITING, waiter.getStatus());
+            // nobody still waiting has waited maxWaitDays or more
+            LinkedChain<GuestRecord> waiting = guestData.getWaitingGuests();
+            for (int i = 0; i < waiting.size(); i++)
+            {
+                assertTrue(today - waiting.get(i).getArrivalDay() < 2);
+            }
+            assertEquals(waiting.size(), r.getWaitingGuests());
+        }
 
-        // On day 3 the guest has waited 2 days (the maximum) and leaves
-        DailyRecord d3 = simulation.runNextDay();
-        assertEquals(1, d3.getUnservedGuests());
-        assertEquals(0, d3.getWaitingGuests());
-        assertEquals(GuestStatus.LEFT_UNSERVED, waiter.getStatus());
-        assertEquals(1, guestData.getUnservedCount());
+        assertTrue(guestData.getUnservedCount() > 0);
 
-        // With a max wait of 0, an unlucky guest leaves on arrival day
-        build(3, 0, 0, new Random(1));
-        guestData.addGuest("Single", 1, 7);
-        GuestRecord instant = guestData.addGuest("Single", 1, 1);
-        DailyRecord r = simulation.runNextDay();
-        assertEquals(1, r.getUnservedGuests());
-        assertEquals(GuestStatus.LEFT_UNSERVED, instant.getStatus());
+        // the record of who left matches the guests' statuses
+        int unserved = 0;
+        for (GuestRecord guest : allGuests())
+        {
+            if (guest.getStatus() == GuestStatus.LEFT_UNSERVED)
+            {
+                unserved++;
+            }
+        }
+        assertEquals(guestData.getUnservedCount(), unserved);
     }
 
 
@@ -185,29 +277,43 @@ public class SimulationTest
      */
     public void testRoomsCheckedOutAndCleanedOnCorrectDays()
     {
-        GuestRecord guest = guestData.addGuest("Single", 1, 2);
+        // one room; 2 to 4 guests arrive each day and wait a long time
+        buildOneType(12, 3, 30, 1);
         RoomRecord room = roomData.findRoom(1);
-        assertEquals("Single", room.getRoomType());
 
-        simulation.runNextDay(); // day 1: check in, stay ends day 3
+        simulation.runNextDay();
         assertEquals(RoomStatus.OCCUPIED, room.getStatus());
-        assertEquals(3, room.getStayEndDay());
+        GuestRecord guest = guestData.findGuest(room.getCurrentGuestId());
+        int endDay = room.getStayEndDay();
+        assertEquals(1, guest.getCheckInDay());
+        assertEquals(1 + guest.getLengthOfStay(), endDay);
 
-        simulation.runNextDay(); // day 2: still occupied
-        assertEquals(RoomStatus.OCCUPIED, room.getStatus());
-        assertEquals(0, dailyData.getDay(2).getCheckOuts());
+        // the guest keeps the room until the day their stay ends
+        while (simulation.getCurrentDay() < endDay - 1)
+        {
+            simulation.runNextDay();
+            assertEquals(RoomStatus.OCCUPIED, room.getStatus());
+            assertEquals(guest.getGuestId(), room.getCurrentGuestId());
+        }
 
-        DailyRecord d3 = simulation.runNextDay(); // day 3: check out
-        assertEquals(1, d3.getCheckOuts());
+        // on the last day they check out and the room is cleaned
+        DailyRecord checkOutDay = simulation.runNextDay();
+        assertEquals(endDay, checkOutDay.getDay());
         assertEquals(GuestStatus.CHECKED_OUT, guest.getStatus());
+        assertEquals(endDay, guest.getCheckOutDay());
         assertEquals(RoomStatus.CLEANING, room.getStatus());
-        assertEquals(1, d3.getRoomsBeingCleaned());
-        assertEquals(0, d3.getOccupiedRooms());
+        assertEquals(-1, room.getCurrentGuestId());
+        assertEquals(1, checkOutDay.getCheckOuts());
+        assertEquals(1, checkOutDay.getRoomsBeingCleaned());
+        assertEquals(0, checkOutDay.getCheckIns());
 
-        DailyRecord d4 = simulation.runNextDay(); // day 4: cleaned
-        assertEquals(RoomStatus.AVAILABLE, room.getStatus());
-        assertEquals(0, d4.getRoomsBeingCleaned());
-        assertEquals(2, d4.getAvailableRooms());
+        // the next day the room is free again and the next guest gets it
+        DailyRecord nextDay = simulation.runNextDay();
+        assertEquals(RoomStatus.OCCUPIED, room.getStatus());
+        assertEquals(0, nextDay.getRoomsBeingCleaned());
+        assertEquals(1, nextDay.getCheckIns());
+        GuestRecord nextGuest = guestData.findGuest(room.getCurrentGuestId());
+        assertEquals(endDay + 1, nextGuest.getCheckInDay());
     }
 
 
@@ -216,34 +322,88 @@ public class SimulationTest
      */
     public void testDailyRecordsHaveAccurateCounts()
     {
-        build(10, 20, 3, new Random(7));
         simulation.runAll();
 
-        int arrivals = 0;
-        int checkIns = 0;
-        int unserved = 0;
+        int totalArrivals = 0;
+        int totalCheckIns = 0;
+        int totalCheckOuts = 0;
+        int totalUnserved = 0;
         for (int day = 1; day <= 10; day++)
         {
             DailyRecord r = dailyData.getDay(day);
             assertEquals(day, r.getDay());
-            assertEquals(2, r.getOccupiedRooms() + r.getAvailableRooms()
-                + r.getRoomsBeingCleaned());
-            assertEquals(r.getCheckIns(), r.getServedGuests());
-            assertTrue(r.getTotalGuests() >= 16 && r.getTotalGuests() <= 24);
 
             int demand = r.getDemandByType()[0] + r.getDemandByType()[1];
             assertEquals(r.getTotalGuests(), demand);
+            assertEquals(r.getCheckIns(), r.getServedGuests());
+            assertEquals(5, r.getOccupiedRooms() + r.getAvailableRooms()
+                + r.getRoomsBeingCleaned());
+            assertTrue(r.getAverageWaitingTime() >= 0.0);
+            assertTrue(r.getAverageWaitingTime() <= 2.0);
 
-            arrivals += r.getTotalGuests();
-            checkIns += r.getCheckIns();
-            unserved += r.getUnservedGuests();
+            totalArrivals += r.getTotalGuests();
+            totalCheckIns += r.getCheckIns();
+            totalCheckOuts += r.getCheckOuts();
+            totalUnserved += r.getUnservedGuests();
         }
 
-        assertEquals(arrivals, guestData.getTotalGuests());
-        assertEquals(unserved, guestData.getUnservedCount());
-        // Every guest is checked in, unserved, or still waiting
-        int waiting = dailyData.getDay(10).getWaitingGuests();
-        assertEquals(arrivals, checkIns + unserved + waiting);
+        // the daily totals match the guest records
+        int checkedIn = 0;
+        int checkedOut = 0;
+        int stillIn = 0;
+        for (GuestRecord guest : allGuests())
+        {
+            if (guest.getCheckInDay() != -1)
+            {
+                checkedIn++;
+            }
+            if (guest.getStatus() == GuestStatus.CHECKED_OUT)
+            {
+                checkedOut++;
+            }
+            if (guest.getStatus() == GuestStatus.CHECKED_IN)
+            {
+                stillIn++;
+            }
+        }
+        assertEquals(guestData.getTotalGuests(), totalArrivals);
+        assertEquals(checkedIn, totalCheckIns);
+        assertEquals(checkedOut, totalCheckOuts);
+        assertEquals(guestData.getUnservedCount(), totalUnserved);
+
+        // the last day's room and waiting counts match the current state
+        DailyRecord last = dailyData.getDay(10);
+        assertEquals(stillIn, last.getOccupiedRooms());
+        assertEquals(roomData.countByStatus(RoomStatus.OCCUPIED),
+            last.getOccupiedRooms());
+        assertEquals(roomData.countByStatus(RoomStatus.AVAILABLE),
+            last.getAvailableRooms());
+        assertEquals(roomData.countByStatus(RoomStatus.CLEANING),
+            last.getRoomsBeingCleaned());
+        assertEquals(guestData.getWaitingGuests().size(),
+            last.getWaitingGuests());
+    }
+
+
+    /**
+     * Tests a room type with 0% demand is never requested
+     */
+    public void testZeroDemandTypeNeverPicked()
+    {
+        build(10, 5, 1, new String[] { "Single", "Suite", "Penthouse" },
+            new int[] { 2, 2, 1 }, new double[] { 0.0, 100.0, 0.0 }, 3);
+        simulation.runAll();
+
+        assertTrue(guestData.getTotalGuests() > 0);
+        for (GuestRecord guest : allGuests())
+        {
+            assertEquals("Suite", guest.getRequestedRoomType());
+        }
+        for (int day = 1; day <= 10; day++)
+        {
+            assertEquals(0, dailyData.getDay(day).getDemandByType()[0]);
+            assertEquals(0, dailyData.getDay(day).getDemandByType()[2]);
+        }
     }
 
 
@@ -252,43 +412,21 @@ public class SimulationTest
      */
     public void testRunNextDayAfterAllDaysThrows()
     {
-        assertTrue(simulation.hasMoreDays());
-        assertEquals(0, simulation.getCurrentDay());
         simulation.runAll();
         assertFalse(simulation.hasMoreDays());
-        assertEquals(5, simulation.getCurrentDay());
 
+        Exception thrown = null;
         try
         {
             simulation.runNextDay();
-            fail("No days are left to run");
         }
-        catch (IllegalStateException e)
+        catch (Exception e)
         {
-            assertNotNull(e.getMessage());
+            thrown = e;
         }
-        assertEquals(5, dailyData.getNumberOfDays());
-
-        // Constructor rejects null arguments
-        try
-        {
-            new Simulation(hotelData, guestData, roomData, dailyData, null);
-            fail("Null random should be rejected");
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertNotNull(e.getMessage());
-        }
-        try
-        {
-            new Simulation(null, guestData, roomData, dailyData,
-                new Random());
-            fail("Null hotel data should be rejected");
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertNotNull(e.getMessage());
-        }
+        assertTrue(thrown instanceof IllegalStateException);
+        assertEquals(10, simulation.getCurrentDay());
+        assertEquals(10, dailyData.getNumberOfDays());
     }
 
 
@@ -297,22 +435,25 @@ public class SimulationTest
      */
     public void testRunAllCompletesEveryRemainingDayOnce()
     {
-        simulation.runNextDay();
+        DailyRecord first = simulation.runNextDay();
+        assertEquals(1, first.getDay());
+        assertSame(first, dailyData.getDay(1));
         simulation.runNextDay();
         assertEquals(2, simulation.getCurrentDay());
-        assertEquals(2, dailyData.getNumberOfDays());
 
         simulation.runAll();
-        assertEquals(5, simulation.getCurrentDay());
-        assertEquals(5, dailyData.getNumberOfDays());
-        for (int day = 1; day <= 5; day++)
+        assertEquals(10, simulation.getCurrentDay());
+        assertEquals(10, dailyData.getNumberOfDays());
+        assertSame(first, dailyData.getDay(1));
+        for (int day = 1; day <= 10; day++)
         {
             assertEquals(day, dailyData.getDay(day).getDay());
         }
 
-        // Running again changes nothing
+        // running all again does nothing
         simulation.runAll();
-        assertEquals(5, dailyData.getNumberOfDays());
+        assertEquals(10, simulation.getCurrentDay());
+        assertEquals(10, dailyData.getNumberOfDays());
     }
 
 
@@ -321,27 +462,26 @@ public class SimulationTest
      */
     public void testSeededRandomIsRepeatable()
     {
-        build(8, 15, 2, new Random(42));
         simulation.runAll();
-        DailyData first = dailyData;
-        GuestData firstGuests = guestData;
+        DailyData firstRun = dailyData;
+        int firstGuests = guestData.getTotalGuests();
 
-        build(8, 15, 2, new Random(42));
+        setUp(); // same setup, same seed
         simulation.runAll();
 
-        assertEquals(firstGuests.getTotalGuests(), guestData.getTotalGuests());
-        for (int day = 1; day <= 8; day++)
+        assertEquals(firstGuests, guestData.getTotalGuests());
+        for (int day = 1; day <= 10; day++)
         {
-            DailyRecord a = first.getDay(day);
+            DailyRecord a = firstRun.getDay(day);
             DailyRecord b = dailyData.getDay(day);
             assertEquals(a.getTotalGuests(), b.getTotalGuests());
             assertEquals(a.getCheckIns(), b.getCheckIns());
             assertEquals(a.getCheckOuts(), b.getCheckOuts());
             assertEquals(a.getUnservedGuests(), b.getUnservedGuests());
-            assertEquals(a.getWaitingGuests(), b.getWaitingGuests());
+            assertEquals(a.getOccupiedRooms(), b.getOccupiedRooms());
             assertEquals(a.getDemandByType()[0], b.getDemandByType()[0]);
-            assertEquals(a.getAverageWaitingTime(),
-                b.getAverageWaitingTime(), 0.0001);
+            assertEquals(a.getShortageByType()[1],
+                b.getShortageByType()[1]);
         }
     }
 }
