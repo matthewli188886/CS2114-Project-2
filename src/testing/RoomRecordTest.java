@@ -13,7 +13,7 @@ public class RoomRecordTest
      */
     public void setUp()
     {
-        // TODO
+        room = new RoomRecord(204, "Double");
     }
 
 
@@ -22,7 +22,9 @@ public class RoomRecordTest
      */
     public void testConstructorInitializesFields()
     {
-        // TODO
+        assertEquals(RoomStatus.AVAILABLE, room.getStatus());
+        assertEquals(-1, room.getCurrentGuestId());
+        assertEquals(-1, room.getStayEndDay());
     }
 
 
@@ -31,7 +33,11 @@ public class RoomRecordTest
      */
     public void testAvailableToOccupied()
     {
-        // TODO
+        room.occupy(12, 9);
+
+        assertEquals(RoomStatus.OCCUPIED, room.getStatus());
+        assertEquals(12, room.getCurrentGuestId());
+        assertEquals(9, room.getStayEndDay());
     }
 
 
@@ -40,7 +46,10 @@ public class RoomRecordTest
      */
     public void testOccupiedToCleaning()
     {
-        // TODO
+        room.occupy(12, 9);
+        room.startCleaning();
+
+        assertEquals(RoomStatus.CLEANING, room.getStatus());
     }
 
 
@@ -49,7 +58,19 @@ public class RoomRecordTest
      */
     public void testCleaningToAvailable()
     {
-        // TODO
+        room.occupy(12, 9);
+        room.startCleaning();
+        room.makeAvailable();
+
+        assertEquals(RoomStatus.AVAILABLE, room.getStatus());
+        assertEquals(-1, room.getCurrentGuestId());
+        assertEquals(-1, room.getStayEndDay());
+
+        // the room can be occupied again after cleaning
+        room.occupy(13, 11);
+        assertEquals(RoomStatus.OCCUPIED, room.getStatus());
+        assertEquals(13, room.getCurrentGuestId());
+        assertEquals(11, room.getStayEndDay());
     }
 
 
@@ -58,7 +79,82 @@ public class RoomRecordTest
      */
     public void testInvalidTransitionsThrowIllegalStateException()
     {
-        // TODO
+        // AVAILABLE: cannot start cleaning or be made available
+        Exception thrown = null;
+        try
+        {
+            room.startCleaning();
+        }
+        catch (Exception e)
+        {
+            thrown = e;
+        }
+        assertTrue(thrown instanceof IllegalStateException);
+
+        thrown = null;
+        try
+        {
+            room.makeAvailable();
+        }
+        catch (Exception e)
+        {
+            thrown = e;
+        }
+        assertTrue(thrown instanceof IllegalStateException);
+        assertEquals(RoomStatus.AVAILABLE, room.getStatus());
+
+        // OCCUPIED: cannot be occupied again or be made available
+        room.occupy(12, 9);
+        thrown = null;
+        try
+        {
+            room.occupy(13, 11);
+        }
+        catch (Exception e)
+        {
+            thrown = e;
+        }
+        assertTrue(thrown instanceof IllegalStateException);
+        assertEquals(12, room.getCurrentGuestId());
+        assertEquals(9, room.getStayEndDay());
+
+        thrown = null;
+        try
+        {
+            room.makeAvailable();
+        }
+        catch (Exception e)
+        {
+            thrown = e;
+        }
+        assertTrue(thrown instanceof IllegalStateException);
+        assertEquals(RoomStatus.OCCUPIED, room.getStatus());
+
+        // CLEANING: cannot be occupied or start cleaning again
+        room.startCleaning();
+        thrown = null;
+        try
+        {
+            room.occupy(13, 11);
+        }
+        catch (Exception e)
+        {
+            thrown = e;
+        }
+        assertTrue(thrown instanceof IllegalStateException);
+        assertEquals(-1, room.getCurrentGuestId());
+
+        thrown = null;
+        try
+        {
+            room.startCleaning();
+        }
+        catch (Exception e)
+        {
+            thrown = e;
+        }
+        assertTrue(thrown instanceof IllegalStateException);
+        assertEquals(RoomStatus.CLEANING, room.getStatus());
     }
 
 
@@ -67,7 +163,11 @@ public class RoomRecordTest
      */
     public void testStartCleaningClearsGuestAndStayEnd()
     {
-        // TODO
+        room.occupy(12, 9);
+        room.startCleaning();
+
+        assertEquals(-1, room.getCurrentGuestId());
+        assertEquals(-1, room.getStayEndDay());
     }
 
 
@@ -76,6 +176,13 @@ public class RoomRecordTest
      */
     public void testGettersReturnCorrectValues()
     {
-        // TODO
+        assertEquals(204, room.getRoomNumber());
+        assertEquals("Double", room.getRoomType());
+
+        room.occupy(12, 9);
+        assertEquals(204, room.getRoomNumber());
+        assertEquals("Double", room.getRoomType());
+        assertEquals(12, room.getCurrentGuestId());
+        assertEquals(9, room.getStayEndDay());
     }
 }
