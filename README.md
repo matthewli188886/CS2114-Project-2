@@ -13,6 +13,7 @@ to find where problems or bottlenecks appear.
 ## Team
 
 - Matthew Li
+- Zichen Fu
 - _Add teammates here_
 
 ## Getting Started
