@@ -128,13 +128,13 @@ public class GuestDataTest extends student.TestCase {
         assertEquals(1, guestData.getUnservedCount());
         assertEquals(1, guestData.getUnservedGuests().size());
         assertSame(guest1, guestData.getUnservedGuests().get(0));
-        assertEquals(GuestStatus.UNSERVED, guest1.getStatus());
+        assertEquals(GuestStatus.LEFT_UNSERVED, guest1.getStatus());
 
         guestData.markUnserved(guest2);
 
         assertEquals(2, guestData.getUnservedCount());
         assertSame(guest2, guestData.getUnservedGuests().get(1));
-        assertEquals(GuestStatus.UNSERVED, guest2.getStatus());
+        assertEquals(GuestStatus.LEFT_UNSERVED, guest2.getStatus());
 
         // Marking a guest unserved must not remove them from all guests.
         assertEquals(2, guestData.getTotalGuests());
