@@ -3,7 +3,7 @@ package hotel;
 /** Results and statistics for one simulated day. */
 public class DailyRecord {
 
-    private int day;
+    private final int day;
     private int totalGuests;
     private int servedGuests;
     private int unservedGuests;
@@ -14,124 +14,115 @@ public class DailyRecord {
     private int roomsBeingCleaned;
     private int waitingGuests;
     private double averageWaitingTime;
-    private int[] demandByType;     // same order as HotelData.roomTypes
-    private int[] shortageByType;   // same order as HotelData.roomTypes
+    private final int[] demandByType;     // same order as HotelData.roomTypes
+    private final int[] shortageByType;   // same order as HotelData.roomTypes
 
     /** All counts start at 0; both arrays have size numRoomTypes. */
     public DailyRecord(int day, int numRoomTypes) {
-        // TODO
+        this.day = day;
+        this.demandByType = new int[numRoomTypes];
+        this.shortageByType = new int[numRoomTypes];
     }
 
+    /** Adds one to the demand for the room type at typeIndex. */
     public void incrementDemand(int typeIndex) {
-        // TODO
+        demandByType[typeIndex]++;
     }
 
+    /** Adds one to the shortage for the room type at typeIndex. */
     public void incrementShortage(int typeIndex) {
-        // TODO
+        shortageByType[typeIndex]++;
     }
 
     public int getDay() {
-        // TODO
-        return 0;
+        return day;
     }
 
     public int getTotalGuests() {
-        // TODO
-        return 0;
+        return totalGuests;
     }
 
     public void setTotalGuests(int n) {
-        // TODO
+        totalGuests = n;
     }
 
     public int getServedGuests() {
-        // TODO
-        return 0;
+        return servedGuests;
     }
 
     public void setServedGuests(int n) {
-        // TODO
+        servedGuests = n;
     }
 
     public int getUnservedGuests() {
-        // TODO
-        return 0;
+        return unservedGuests;
     }
 
     public void setUnservedGuests(int n) {
-        // TODO
+        unservedGuests = n;
     }
 
     public int getCheckIns() {
-        // TODO
-        return 0;
+        return checkIns;
     }
 
     public void setCheckIns(int n) {
-        // TODO
+        checkIns = n;
     }
 
     public int getCheckOuts() {
-        // TODO
-        return 0;
+        return checkOuts;
     }
 
     public void setCheckOuts(int n) {
-        // TODO
+        checkOuts = n;
     }
 
     public int getOccupiedRooms() {
-        // TODO
-        return 0;
+        return occupiedRooms;
     }
 
     public void setOccupiedRooms(int n) {
-        // TODO
+        occupiedRooms = n;
     }
 
     public int getAvailableRooms() {
-        // TODO
-        return 0;
+        return availableRooms;
     }
 
     public void setAvailableRooms(int n) {
-        // TODO
+        availableRooms = n;
     }
 
     public int getRoomsBeingCleaned() {
-        // TODO
-        return 0;
+        return roomsBeingCleaned;
     }
 
     public void setRoomsBeingCleaned(int n) {
-        // TODO
+        roomsBeingCleaned = n;
     }
 
     public int getWaitingGuests() {
-        // TODO
-        return 0;
+        return waitingGuests;
     }
 
     public void setWaitingGuests(int n) {
-        // TODO
+        waitingGuests = n;
     }
 
     public double getAverageWaitingTime() {
-        // TODO
-        return 0.0;
+        return averageWaitingTime;
     }
 
     public void setAverageWaitingTime(double t) {
-        // TODO
+        averageWaitingTime = t;
     }
 
     public int[] getDemandByType() {
-        // TODO
-        return null;
+        return demandByType;
     }
 
     public int[] getShortageByType() {
-        // TODO
-        return null;
+        return shortageByType;
     }
 }

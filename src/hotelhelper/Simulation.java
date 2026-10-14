@@ -1,4 +1,4 @@
-package hotel;
+package hotelhelper;
 
 import java.util.Random;
 
